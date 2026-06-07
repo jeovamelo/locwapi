@@ -14,31 +14,36 @@ with open(index_path, 'w', encoding='utf-8') as f:
 print("index.html patched.")
 
 # 2. Patch JS file
-print("Patching index-CO3NSIFj.js...")
+print("Patching JS file...")
 js_path = "/root/whatsapp-api/custom/index-CO3NSIFj.js"
 with open(js_path, 'r', encoding='utf-8') as f:
     js = f.read()
 
-# Let's do replacements for the brand
-js = js.replace("Evolution Manager", "W-API v2")
-js = js.replace("Evolution API", "W-API")
-
-# Replace header/landing texts
-js = js.replace("Evolution API - Modern web interface...", "Seu código produtivo em sua máxima potência.")
-js = js.replace("Modern web interface", "Seu código produtivo em sua máxima potência.")
-
-# Replace welcome texts
-js = js.replace("Welcome to Evolution API", "Bem-vindo ao Painel de Integração")
+# Replace product name and header texts
+js = js.replace("Evolution Manager - Modern web interface for Evolution API management", "W-API v2 - Seu código produtivo em sua máxima potência.")
 js = js.replace("Welcome to Evolution Manager", "Bem-vindo ao Painel de Integração")
+js = js.replace("Welcome to Evolution API", "Bem-vindo ao Painel de Integração")
+js = js.replace("A powerful, modern dashboard for managing your WhatsApp API instances with Evolution API", "Um painel moderno e intuitivo construído para gerenciar suas instâncias de API do WhatsApp e monitorar webhooks em tempo real.")
 
-# Replace login description
-js = js.replace("Please enter your credentials to continue", "Por favor, insira suas credenciais para continuar")
-
-# Replace button text
+# Fallbacks in case of partial replaces or different strings
+js = js.replace("Modern web interface for Evolution API management", "Seu código produtivo em sua máxima potência.")
 js = js.replace("Access Manager Dashboard", "Entrar no Painel")
-
-# Replace resources/support footer section
 js = js.replace("Resources & Support", "Recursos & Suporte")
+
+# Replace card texts (GitHub, Website, Contact)
+js = js.replace('children:"GitHub"', 'children:"Documentação"')
+js = js.replace('children:"Source code"', 'children:"Consulte nossa referência de API e rotas Postman"')
+js = js.replace('href:"https://github.com/EvolutionAPI/evolution-api"', 'href:"http://2.25.183.40:9000"')
+
+js = js.replace('children:"Website"', 'children:"Status do Sistema"')
+js = js.replace('children:"Official site"', 'children:"Verifique a estabilidade operacional dos nossos servidores"')
+js = js.replace('href:"https://evolution-api.com"', 'href:"http://2.25.183.40:9000"')
+
+js = js.replace('children:"Contact"', 'children:"Suporte Interno"')
+js = js.replace('children:"Get support"', 'children:"Abra um chamado com o time de engenharia"')
+
+# Hide footer social/doc links
+js = js.replace('o=[{name:"Discord",url:"https://evolution-api.com/discord"},{name:"Postman",url:"https://evolution-api.com/postman"},{name:"GitHub",url:"https://github.com/EvolutionAPI/evolution-api"},{name:"Docs",url:"https://doc.evolution-api.com"}]', 'o=[]')
 
 # Replace copyright
 js = js.replace("© 2024 Evolution API", "© 2026 W-API. Todos os direitos reservados. Uso exclusivo interno e homologado.")
@@ -49,16 +54,20 @@ with open(js_path, 'w', encoding='utf-8') as f:
     f.write(js)
 print("JS file patched.")
 
-# 3. Patch CSS file to hide elements and customize style
-print("Patching index-DsIrum0U.css...")
+# 3. Patch CSS file
+print("Patching CSS file...")
 css_path = "/root/whatsapp-api/custom/index-DsIrum0U.css"
 with open(css_path, 'r', encoding='utf-8') as f:
     css = f.read()
 
-# Hide Discord, GitHub, Postman, Docs and external links
-hide_rules = '\n\na[href*="discord"], a[href*="github"], a[href*="postman"], a[href*="docs"], a[href*="evolution-api.com"] { display: none !important; }\n'
-# Hide Evolution logo and replace with title placeholder
-hide_rules += '.logo-container img, img[src*="evolution-logo"], svg[class*="logo"] { content: url("/assets/images/evolution-logo.png"); max-height: 50px; }\n'
+# Hide top-left Logo, replace it with a styled title, and remove any remaining social links
+hide_rules = '\n\n'
+# Hide top left evolutionapi logo image/svg completely
+hide_rules += 'header img[src*="evolution"], header svg, .logo-container img { display: none !important; }\n'
+# Add a custom text "W-API v2" in the header using a pseudo-element
+hide_rules += 'header::before { content: "W-API v2"; font-weight: bold; font-size: 1.25rem; color: #10b981; margin-right: auto; padding-left: 10px; }\n'
+# Hide the center logo above W-API v2 title on the login card
+hide_rules += '.flex.justify-center.mb-8 img, img[src*="evolution-logo"], svg[class*="logo"] { display: none !important; }\n'
 
 css += hide_rules
 
