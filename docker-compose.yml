@@ -78,26 +78,11 @@ services:
       - VITE_EVOLUTION_API_KEY=0d8b0f326efcccbd9fa1d834814a5541b02e596bf71802d5
       - VITE_APP_NAME=W-API Dashboard
       - LANGUAGE=pt-BR
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        # Fix the Nginx config bug
-        sed -i 's/must-revalidate//g' /etc/nginx/conf.d/nginx.conf
-        
-        # Patch HTML Title and Favicon
-        sed -i 's/Evolution Manager/W-API/g' /usr/share/nginx/html/index.html
-        sed -i 's|href="https://evolution-api.com/files/evo/favicon.svg"|href="/assets/images/evolution-logo.png"|g' /usr/share/nginx/html/index.html
-        
-        # Patch JS for product name replacements
-        sed -i 's/Evolution API/W-API/g' /usr/share/nginx/html/assets/index-*.js
-        sed -i 's/Evolution Manager/W-API/g' /usr/share/nginx/html/assets/index-*.js
-        
-        # Inject CSS rules to hide external links (Discord, GitHub, Postman, Docs)
-        echo 'a[href*="discord"], a[href*="github"], a[href*="postman"], a[href*="docs"], a[href*="evolution-api.com"] { display: none !important; }' >> /usr/share/nginx/html/assets/index-*.css
-        
-        # Start the container standard start script
-        exec /bin/sh /start.sh
+    entrypoint: ["/bin/sh", "-c", "sed -i 's/must-revalidate//g' /etc/nginx/conf.d/nginx.conf && exec /bin/sh /start.sh"]
+    volumes:
+      - ./custom/index.html:/usr/share/nginx/html/index.html
+      - ./custom/index-CO3NSIFj.js:/usr/share/nginx/html/assets/index-CO3NSIFj.js
+      - ./custom/index-DsIrum0U.css:/usr/share/nginx/html/assets/index-DsIrum0U.css
     depends_on:
       - evolution-api
     networks:
