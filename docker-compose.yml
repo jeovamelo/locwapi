@@ -1,0 +1,122 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: evolution_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: evolution
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lBiR2qR5nw-aWx5kAlHXDQ
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - evolution_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: evolution_redis
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - evolution_net
+
+  evolution-api:
+    image: evoapicloud/evolution-api:latest
+    container_name: evolution_api
+    restart: always
+    ports:
+      - "9000:8080"
+    environment:
+      # Database Config
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:lBiR2qR5nw-aWx5kAlHXDQ@postgres:5432/evolution?sslmode=disable
+      - DATABASE_CONNECTION_CLIENT_NAME=evolution
+      # Redis Config
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379/1
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      # Authentication Config
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_API_KEY_HEADER=apikey
+      - AUTHENTICATION_API_KEY=0d8b0f326efcccbd9fa1d834814a5541b02e596bf71802d5
+      # Language Config
+      - LANGUAGE=pt-BR
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - evolution_net
+
+  evolution-manager:
+    image: evoapicloud/evolution-manager:latest
+    container_name: evolution_manager
+    restart: always
+    ports:
+      - "4433:80"
+    environment:
+      - VITE_EVOLUTION_API_URL=http://2.25.183.40:9000
+      - VITE_EVOLUTION_API_KEY=0d8b0f326efcccbd9fa1d834814a5541b02e596bf71802d5
+      - VITE_APP_NAME=Evolution Manager
+      - LANGUAGE=pt-BR
+    entrypoint: ["/bin/sh", "-c", "sed -i 's/must-revalidate//g' /etc/nginx/conf.d/nginx.conf && exec /bin/sh /start.sh"]
+    depends_on:
+      - evolution-api
+    networks:
+      - evolution_net
+
+  evolution-manager-whitelabel:
+    image: evoapicloud/evolution-manager:latest
+    container_name: evolution_manager_whitelabel
+    restart: always
+    ports:
+      - "4444:80"
+    environment:
+      - VITE_EVOLUTION_API_URL=http://2.25.183.40:9000
+      - VITE_EVOLUTION_API_KEY=0d8b0f326efcccbd9fa1d834814a5541b02e596bf71802d5
+      - VITE_APP_NAME=W-API Dashboard
+      - LANGUAGE=pt-BR
+    entrypoint: 
+      - /bin/sh
+      - -c
+      - |
+        # Fix the Nginx config bug
+        sed -i 's/must-revalidate//g' /etc/nginx/conf.d/nginx.conf
+        
+        # Patch HTML Title and Favicon
+        sed -i 's/Evolution Manager/W-API/g' /usr/share/nginx/html/index.html
+        sed -i 's|href="https://evolution-api.com/files/evo/favicon.svg"|href="/assets/images/evolution-logo.png"|g' /usr/share/nginx/html/index.html
+        
+        # Patch JS for product name replacements
+        sed -i 's/Evolution API/W-API/g' /usr/share/nginx/html/assets/index-*.js
+        sed -i 's/Evolution Manager/W-API/g' /usr/share/nginx/html/assets/index-*.js
+        
+        # Inject CSS rules to hide external links (Discord, GitHub, Postman, Docs)
+        echo 'a[href*="discord"], a[href*="github"], a[href*="postman"], a[href*="docs"], a[href*="evolution-api.com"] { display: none !important; }' >> /usr/share/nginx/html/assets/index-*.css
+        
+        # Start the container standard start script
+        exec /bin/sh /start.sh
+    depends_on:
+      - evolution-api
+    networks:
+      - evolution_net
+
+  nginx-proxy-manager:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx_proxy_manager
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - ./data/nginx/data:/data
+      - ./data/nginx/letsencrypt:/etc/letsencrypt
+    networks:
+      - evolution_net
+
+networks:
+  evolution_net:
+    driver: bridge
